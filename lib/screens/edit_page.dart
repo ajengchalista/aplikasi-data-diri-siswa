@@ -213,30 +213,34 @@ class _FormSiswaPageState extends State<Editpage> {
     };
 
     try {
+      print('Starting _performSave with siswa data: $siswa');
       // 1) Simpan atau update siswa, ambil id siswa hasil insert/update
       dynamic siswaResponse;
       dynamic siswaId;
 
       if (widget.data == null) {
         // INSERT baru
+        print('Inserting new siswa');
         siswaResponse = await supabase.from('siswa').insert(siswa).select('id').single();
         siswaId = siswaResponse['id'];
+        print('Inserted siswa with id: $siswaId');
       } else {
         // UPDATE
         final existingId = widget.data?['id'];
         if (existingId != null) {
+          print('Updating siswa with id: $existingId');
           await supabase.from('siswa').update(siswa).eq('id', existingId);
           siswaId = existingId;
         } else {
+          print('Updating siswa by nisn: ${_nisnController.text.trim()}');
           await supabase.from('siswa').update(siswa).eq('nisn', _nisnController.text.trim());
           final fetch = await supabase.from('siswa').select('id').eq('nisn', _nisnController.text.trim()).single();
           siswaId = fetch['id'];
         }
       }
 
-      // 2) Siapkan data wali (note: nama_wali optional)
+      // 2) Siapkan data wali (note: nama_wali optional, hapus 'id' dari data)
       final waliData = {
-        'id': siswaId, // Sesuaikan dengan skema, anggap id wali sama dengan siswaId
         'nama_ayah': _namaAyahController.text.trim(),
         'nama_ibu': _namaIbuController.text.trim(),
         'nama_wali': _namaWaliController.text.trim().isEmpty ? null : _namaWaliController.text.trim(),
@@ -250,14 +254,33 @@ class _FormSiswaPageState extends State<Editpage> {
         'kode_pos': _kodePosOrangTuaController.text.trim(),
       };
 
-      // 3) Simpan atau update wali
+      print('Wali data prepared: $waliData');
+
+      // 3) Simpan atau update wali berdasarkan id yang ada (jika edit)
+      dynamic waliId;
       if (widget.data == null || widget.data?['wali'] == null) {
-        // Insert baru
-        await supabase.from('wali').insert(waliData);
+        // Insert baru untuk wali
+        print('Inserting new wali');
+        final waliResponse = await supabase.from('wali').insert(waliData).select('id').single();
+        waliId = waliResponse['id'];
+        print('Inserted wali with id: $waliId');
       } else {
-        // Update by id (siswaId)
-        await supabase.from('wali').update(waliData).eq('id', siswaId);
+        // Update wali berdasarkan id yang ada di data wali
+        final existingWaliId = widget.data?['wali']['id'];
+        if (existingWaliId != null) {
+          print('Updating wali with id: $existingWaliId');
+          await supabase.from('wali').update(waliData).eq('id', existingWaliId);
+          waliId = existingWaliId;
+        } else {
+          print('Inserting new wali (no existing wali id)');
+          final waliResponse = await supabase.from('wali').insert(waliData).select('id').single();
+          waliId = waliResponse['id'];
+        }
       }
+
+      // 4) Update siswa dengan wali_id (relasi)
+      print('Updating siswa with wali_id: $waliId');
+      await supabase.from('siswa').update({'wali_id': waliId}).eq('id', siswaId);
 
       // Notifikasi sukses
       if (!mounted) return;
@@ -267,13 +290,22 @@ class _FormSiswaPageState extends State<Editpage> {
           backgroundColor: Color.fromARGB(255, 255, 149, 149),
         ),
       );
+      print('Navigating back with success');
       Navigator.pop(context, true);
     } catch (e) {
-      // Notifikasi error
+      print('Error in _performSave: $e');
       if (!mounted) return;
+      String errorMessage = "Gagal simpan data: $e";
+      if (e is PostgrestException) {
+        if (e.code == '428C9') {
+          errorMessage = "Gagal simpan data: Kolom 'id' tidak boleh diatur secara manual karena diatur otomatis oleh database.";
+        } else if (e.code == 'PGRST116') {
+          errorMessage = "Gagal simpan data: Query mengembalikan terlalu banyak baris. Hubungi admin.";
+        }
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Gagal simpan data: $e"),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
         ),
       );

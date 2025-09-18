@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'edit_page.dart'; // mendefinisikan `FormSiswaPage`
+import 'edit_page.dart'; // mendefinisikan `Editpage`
+import 'form_page.dart'; // mendefinisikan `FormSiswaPage`
+import 'detail_page.dart'; // mendefinisikan `DetailSiswaPage`
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -183,8 +185,22 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           IconButton(
                             icon: const Icon(
+                              Icons.remove_red_eye,
+                              color: Color.fromARGB(255, 33, 150, 243), // Warna biru untuk detail
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DetailSiswaPage(data: siswa),
+                                ),
+                              ).then((_) => setState(() {}));
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(
                               Icons.edit,
-                              color: Color.fromARGB(255, 67, 170, 255),
+                              color: Color.fromARGB(255, 67, 170, 255), // Warna biru muda untuk edit
                             ),
                             onPressed: () {
                               Navigator.push(
@@ -198,7 +214,7 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             icon: const Icon(
                               Icons.delete,
-                              color: Color.fromARGB(255, 239, 89, 78),
+                              color: Color.fromARGB(255, 239, 89, 78), // Warna merah untuk hapus
                             ),
                             onPressed: () => _confirmDelete(
                               siswa['id'].toString(),
@@ -220,7 +236,7 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const Editpage()),
+            MaterialPageRoute(builder: (_) => const FormSiswaPage()),
           ).then((_) => setState(() {}));
         },
       ),
