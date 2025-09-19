@@ -451,7 +451,7 @@ class _FormSiswaPageState extends State<FormSiswaPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Data berhasil disimpan"),
-          backgroundColor: Color.fromARGB(255, 255, 149, 149),
+          backgroundColor: Color.fromARGB(255, 255, 169, 169),
         ),
       );
       print('Navigating back with success');

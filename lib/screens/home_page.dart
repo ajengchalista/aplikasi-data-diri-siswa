@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'edit_page.dart'; // mendefinisikan `Editpage`
-import 'form_page.dart'; // mendefinisikan `FormSiswaPage`
-import 'detail_page.dart'; // mendefinisikan `DetailSiswaPage`
+import 'edit_page.dart'; // Editpage
+import 'form_page.dart'; // FormSiswaPage
+import 'detail_page.dart'; // DetailSiswaPage
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,13 +15,42 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
+  final Connectivity _connectivity = Connectivity();
+  late Stream<List<ConnectivityResult>> _connectivityStream;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listener untuk notifikasi jaringan
+    _connectivityStream = _connectivity.onConnectivityChanged;
+    _connectivityStream.listen((List<ConnectivityResult> result) {
+      if (result.contains(ConnectivityResult.none)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Jaringan terputus!"),
+              backgroundColor: Colors.redAccent,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    });
+  }
 
   Future<List<dynamic>> getSiswa() async {
-    final response = await supabase
-        .from('siswa')
-        .select('*, wali(*)') // Mengambil data siswa dan wali terkait
-        .order('id', ascending: false);
-    return response;
+    try {
+      final response = await supabase
+          .from('siswa')
+          .select('*, wali(*)') // Mengambil data siswa dan wali terkait
+          .order('id', ascending: false);
+      return response;
+    } on SocketException {
+      throw 'Tidak ada koneksi internet';
+    } catch (e) {
+      throw 'Terjadi masalah koneksi dengan server';
+    }
   }
 
   Future<void> deleteSiswa(String id) async {
@@ -75,7 +106,10 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color.fromARGB(255, 255, 164, 174),
         title: const Text(
           "Data Siswa",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color.fromARGB(221, 0, 0, 0),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
@@ -83,7 +117,10 @@ class _HomePageState extends State<HomePage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color.fromARGB(255, 249, 248, 191), Color(0xFFFFFFFF)],
+            colors: [
+              Color.fromARGB(255, 249, 248, 191),
+              Color(0xFFFFFFFF)
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -98,15 +135,39 @@ class _HomePageState extends State<HomePage> {
             }
 
             if (snapshot.hasError) {
+              String errorMessage = snapshot.error.toString();
               return Center(
-                child: Text(
-                  "Terjadi kesalahan: ${snapshot.error}",
-                  style: const TextStyle(color: Colors.red),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 80,
+                      color: Colors.redAccent,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pinkAccent,
+                      ),
+                      onPressed: () {
+                        setState(() {}); // refresh retry
+                      },
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
                 ),
               );
             }
 
             final siswaList = snapshot.data ?? [];
+
             if (siswaList.isEmpty) {
               return const Center(
                 child: Column(
@@ -121,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                     Text(
                       "Data siswa kosong",
                       style: TextStyle(
-                        color: Colors.black54,
+                        color: Color.fromARGB(255, 0, 0, 0),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -143,9 +204,11 @@ class _HomePageState extends State<HomePage> {
               itemCount: siswaList.length,
               itemBuilder: (context, index) {
                 final siswa = siswaList[index];
+
                 return Container(
                   color: _getRowColor(index),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -186,13 +249,14 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             icon: const Icon(
                               Icons.remove_red_eye,
-                              color: Color.fromARGB(255, 33, 150, 243), // Warna biru untuk detail
+                              color: Color.fromARGB(255, 33, 150, 243),
                             ),
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => DetailSiswaPage(data: siswa),
+                                  builder: (_) =>
+                                      DetailSiswaPage(data: siswa),
                                 ),
                               ).then((_) => setState(() {}));
                             },
@@ -200,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             icon: const Icon(
                               Icons.edit,
-                              color: Color.fromARGB(255, 67, 170, 255), // Warna biru muda untuk edit
+                              color: Color.fromARGB(255, 67, 170, 255),
                             ),
                             onPressed: () {
                               Navigator.push(
@@ -214,11 +278,10 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             icon: const Icon(
                               Icons.delete,
-                              color: Color.fromARGB(255, 239, 89, 78), // Warna merah untuk hapus
+                              color: Color.fromARGB(255, 239, 89, 78),
                             ),
-                            onPressed: () => _confirmDelete(
-                              siswa['id'].toString(),
-                            ),
+                            onPressed: () =>
+                                _confirmDelete(siswa['id'].toString()),
                           ),
                         ],
                       ),
