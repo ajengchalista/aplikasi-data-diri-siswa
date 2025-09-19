@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+//halaman edit data siswa
 class Editpage extends StatefulWidget {
-  final Map<String, dynamic>? data;
+  final Map<String, dynamic>? data; //data suasawa yang akan di edit (jika ada)
   const Editpage({super.key, this.data});
 
   @override
   State<Editpage> createState() => _FormSiswaPageState();
 }
 
+//state untuk halaman Editpage
 class _FormSiswaPageState extends State<Editpage> {
-  final _formKey = GlobalKey<FormState>();
-  final supabase = Supabase.instance.client;
+  final _formKey = GlobalKey<FormState>();// key untuk validasi form
+  final supabase = Supabase.instance.client; //inisialisasi supabase client
 
-  int _currentStep = 0;
+  int _currentStep = 0; //step saat ini pada stepper
 
-  // Controllers
+  // deklarasi controller untuk setiap field input
   late TextEditingController _nisnController;
   late TextEditingController _namaController;
   late TextEditingController _jenisKelaminController;
@@ -25,6 +27,7 @@ class _FormSiswaPageState extends State<Editpage> {
   late TextEditingController _noHpController;
   late TextEditingController _nikController;
 
+//alamat siswa
   late TextEditingController _dusunController;
   late TextEditingController _desaController;
   late TextEditingController _kecamatanController;
@@ -34,10 +37,12 @@ class _FormSiswaPageState extends State<Editpage> {
   late TextEditingController _jalanController;
   late TextEditingController _rtRwController;
 
+//data orang tua/wali
   late TextEditingController _namaAyahController;
   late TextEditingController _namaIbuController;
   late TextEditingController _namaWaliController;
 
+//alamat orang tua
   late TextEditingController _dusunOrangTuaController;
   late TextEditingController _desaOrangTuaController;
   late TextEditingController _kecamatanOrangTuaController;
@@ -50,10 +55,10 @@ class _FormSiswaPageState extends State<Editpage> {
   @override
   void initState() {
     super.initState();
-    final data = widget.data ?? {};
-    final waliData = data['wali'] ?? {};
+    final data = widget.data ?? {};// ambil data siswa, jika null isi {} kosong
+    final waliData = data['wali'] ?? {}; //ambil data wali dari siswa
 
-    // Data Pribadi
+    // Inisialisasi controller dengan data siswa (jika ada)
     _nisnController = TextEditingController(text: data['nisn'] ?? '');
     _namaController = TextEditingController(text: data['nama_lengkap'] ?? '');
     _jenisKelaminController =
@@ -210,9 +215,9 @@ class _FormSiswaPageState extends State<Editpage> {
       body: Form(
         key: _formKey,
         child: Stepper(
-          currentStep: _currentStep,
-          steps: _getSteps(),
-          type: StepperType.vertical,
+          currentStep: _currentStep,//step aktif
+          steps: _getSteps(),//daftar step
+          type: StepperType.vertical,//tipe stepper
           controlsBuilder: (context, details) {
             return Row(
               children: [
@@ -220,7 +225,7 @@ class _FormSiswaPageState extends State<Editpage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.pink.shade200,
                   ),
-                  onPressed: details.onStepContinue,
+                  onPressed: details.onStepContinue,//tombol lanjut/simpan
                   child: const Text("Lanjut / Simpan"),
                 ),
                 const SizedBox(width: 12),
@@ -228,7 +233,7 @@ class _FormSiswaPageState extends State<Editpage> {
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.yellow.shade700,
                   ),
-                  onPressed: details.onStepCancel,
+                  onPressed: details.onStepCancel,//tombol kembali
                   child: const Text("Kembali"),
                 ),
               ],
@@ -236,14 +241,14 @@ class _FormSiswaPageState extends State<Editpage> {
           },
           onStepContinue: () {
             if (_currentStep < _getSteps().length - 1) {
-              setState(() => _currentStep++);
+              setState(() => _currentStep++);//lanjut ke step berikutnya
             } else {
-              _confirmAndSave();
+              _confirmAndSave();//simpan data
             }
           },
           onStepCancel: () {
             if (_currentStep > 0) {
-              setState(() => _currentStep--);
+              setState(() => _currentStep--);//kembali ke step sebelumnya
             }
           },
         ),
@@ -251,12 +256,13 @@ class _FormSiswaPageState extends State<Editpage> {
     );
   }
 
+//fungsi untuk konfirmasi dan simpan data
   void _confirmAndSave() {
     if (_formKey.currentState?.validate() ?? false) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Data berhasil disimpan!'),
-          backgroundColor: const Color.fromARGB(255, 255, 157, 157),
+          backgroundColor: const Color.fromARGB(255, 255, 157, 157),//warna snackbar
           behavior: SnackBarBehavior.floating,
         ),
       );

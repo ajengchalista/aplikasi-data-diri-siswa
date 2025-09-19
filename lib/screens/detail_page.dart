@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'edit_page.dart'; 
-import 'package:connectivity_plus/connectivity_plus.dart'; // cek koneksi internet
+import 'package:connectivity_plus/connectivity_plus.dart'; // Import package untuk cek koneksi internet
 
 class DetailSiswaPage extends StatelessWidget {
-  final Map<String, dynamic>? data;
+  final Map<String, dynamic>? data; //data siawa yang akan ditampilkan
   const DetailSiswaPage({super.key, this.data});
 
   @override
   Widget build(BuildContext context) {
-    final siswaData = data ?? {};
-    final waliData = siswaData['wali'] ?? {};
+    final siswaData = data ?? {};//ambil data siswa, default{} jika null
+    final waliData = siswaData['wali'] ?? {};//ambil data wali, default {} jika null
 
     return FutureBuilder(
-      future: Connectivity().checkConnectivity(),
+      future: Connectivity().checkConnectivity(),//mengecek status koneksi internet
       builder: (context, snapshot) {
         // 🔥 Cek dulu status koneksi internet
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.pinkAccent)),
+            body: Center(child: CircularProgressIndicator(color: Colors.pinkAccent)),//loader ketika masih mengecek koneksi 
           );
         }
 
@@ -32,7 +32,7 @@ class DetailSiswaPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.wifi_off, size: 60, color: Colors.pinkAccent),
+                  Icon(Icons.wifi_off, size: 60, color: Colors.pinkAccent),// Ikon no internet
                   SizedBox(height: 12),
                   Text(
                     "Tidak ada koneksi internet",

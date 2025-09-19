@@ -14,7 +14,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  //client supabase untuk akses database
   final supabase = Supabase.instance.client;
+  
+  //cek koneksi internet
   final Connectivity _connectivity = Connectivity();
   late Stream<List<ConnectivityResult>> _connectivityStream;
 
@@ -26,6 +29,7 @@ class _HomePageState extends State<HomePage> {
     _connectivityStream = _connectivity.onConnectivityChanged;
     _connectivityStream.listen((List<ConnectivityResult> result) {
       if (result.contains(ConnectivityResult.none)) {
+        //jika jaringan terputus, tampilkan snackbar
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -39,12 +43,13 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+// ambil data sisawa + relasi wali dari supabase
   Future<List<dynamic>> getSiswa() async {
     try {
       final response = await supabase
           .from('siswa')
           .select('*, wali(*)') // Mengambil data siswa dan wali terkait
-          .order('id', ascending: false);
+          .order('id', ascending: false);// urutkan dari terbaru
       return response;
     } on SocketException {
       throw 'Tidak ada koneksi internet';
@@ -53,15 +58,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+//hpaus data siwa berdasarkan id
   Future<void> deleteSiswa(String id) async {
     await supabase.from('siswa').delete().eq('id', id);
     setState(() {});
   }
 
+//konfirmasi sebelum hapus data
   Future<void> _confirmDelete(String id) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false,// dialog tidak bisa ditutup dengan tap luar 
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Konfirmasi Hapus"),
@@ -92,6 +99,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+//Warna baris list siswa bergantian (zebra effect)
   Color _getRowColor(int index) {
     return index % 2 == 0
         ? const Color(0xFFFFF0F5) // soft pink muda
@@ -114,6 +122,8 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         elevation: 0,
       ),
+
+      //background gradient
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -125,15 +135,19 @@ class _HomePageState extends State<HomePage> {
             end: Alignment.bottomCenter,
           ),
         ),
+
+        //Ambil data dari supabase menggunakan futurebuilder
         child: FutureBuilder<List<dynamic>>(
           future: getSiswa(),
           builder: (context, snapshot) {
+            //loading state
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(color: Colors.pinkAccent),
               );
             }
 
+          // error handling
             if (snapshot.hasError) {
               String errorMessage = snapshot.error.toString();
               return Center(
@@ -165,7 +179,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             }
-
+            
+            // jika data kosong
             final siswaList = snapshot.data ?? [];
 
             if (siswaList.isEmpty) {
@@ -200,6 +215,7 @@ class _HomePageState extends State<HomePage> {
               );
             }
 
+            // jika ada data -> tampilkan list siswa
             return ListView.builder(
               itemCount: siswaList.length,
               itemBuilder: (context, index) {
@@ -212,6 +228,7 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      //data siswa (nama, nisn, jenis kelamin)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,6 +261,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+                      // tombol aksi: Lihat, edit, hapus
                       Row(
                         children: [
                           IconButton(
@@ -293,6 +311,8 @@ class _HomePageState extends State<HomePage> {
           },
         ),
       ),
+
+      //tombol tambah data siswa
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.add, color: Colors.white),
